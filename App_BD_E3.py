@@ -63,9 +63,9 @@ def listar_eventos(db, col_eventos):
             
         if cuenta == 0:
             print("No se encontraron registros.")
-            input('Presione Enter para continuar...')
+            waitput()
     except PyMongoError as e:
-        input('Presione Enter para continuar...')
+        waitput()
         print(f"[ERROR] {e}")
 
 def buscar_invitados_regex(db, col_invitados):
@@ -85,9 +85,9 @@ def buscar_invitados_regex(db, col_invitados):
         for inv in invitados:
             cuenta += 1
             print(f"- {inv.get('nombre', 'N/A')} ({inv.get('correo', 'N/A')}) | Empresa: {inv.get('empresa', 'N/A')} | Estado: {inv.get('estado', 'N/A')}")
-            input('Presione Enter para continuar...')
+            #waitput()
         if cuenta == 0:
-            input('Presione Enter para continuar...')
+            waitput()
             print("No se encontraron invitados.")
     except PyMongoError as e:
         print(f"[ERROR] {e}")
@@ -123,13 +123,13 @@ def validar_acceso_evento(db, col_eventos, col_invitados):
             
             if estado_en_evento == "confirmado":
                 print(f"\n[ACCESO PERMITIDO] El invitado '{nombre_usuario}' está CONFIRMADO para este evento.")
-                input('Presione Enter para continuar...')
+                waitput()
             else:
                 print(f"\n[ACCESO DENEGADO] El invitado existe, pero su estado en el evento es: '{estado_en_evento.upper()}'.")
-                input('Presione Enter para continuar...')
+                waitput()
         else:
             print("\n[ACCESO DENEGADO] No se encontró un invitado activo con ese correo asociado a dicho código de evento.")
-            input('Presione Enter para continuar...')
+            waitput()
     except PyMongoError as e:
         print(f"[ERROR] {e}")
 
@@ -154,10 +154,10 @@ def top_eventos_confirmados(db, col_eventos):
             cuenta += 1
             info_evento = ev.get("_id", {})
             print(f"{idx}. Evento: {info_evento.get('nombre')} (Cód: {info_evento.get('codigo')}) - Confirmados: {ev.get('total_confirmados')}")
-            input('Presione Enter para continuar...')
+            #waitput()
         if cuenta == 0:
             print("No hay eventos con asistentes confirmados.")
-            input('Presione Enter para continuar...')
+            waitput()
     except PyMongoError as e:
         print(f"[ERROR] {e}")
 
@@ -190,12 +190,15 @@ def menu():
                 break
             else:
                 print("\n[AVISO] Opción inválida.")
-            input('Presione Enter para continuar...')
+            waitput()
     except KeyboardInterrupt:
         print("\n\nCerrando...")
     finally:
         if 'client' in locals():
             client.close()
+
+def waitput():
+    input('\nPresione cualquier tecla para continuar...')
 
 if __name__ == "__main__":
     menu()
