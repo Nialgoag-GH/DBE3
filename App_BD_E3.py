@@ -92,7 +92,7 @@ def buscar_invitados_regex(db, col_invitados):
     except PyMongoError as e:
         print(f"[ERROR] {e}")
 
-def validar_acceso_evento(db, col_eventos, col_invitados):
+def validar_acceso_evento_old(db, col_eventos, col_invitados): #no funciona
     print("\n=== VALIDACIÓN DE ACCESO ===")
     correo = input("Ingrese el correo del invitado (ej: ana.martinez@empresa.cl): ").strip()
     codigo_evento = input("Ingrese el código del evento (ej: EVT-2025-001): ").strip()
@@ -196,6 +196,58 @@ def menu():
     finally:
         if 'client' in locals():
             client.close()
+
+def validar_acceso_evento(db, col_eventos, col_invitados):
+    print("\n=== VALIDACIÓN DE ACCESO ===")
+
+    correo = input("Ingrese el correo del invitado**: ").strip()
+    codigo_evento = input("Ingrese el código del evento: ").strip()
+
+    try:
+        pipeline = [
+            {"$match": {"codigo": codigo_evento}},
+            {"$unwind": "$invitados"},
+            {
+                "$lookup": {
+                    "from": col_invitados,
+                    "localField": "invitados.rut",
+                    "foreignField": "rut",
+                    "as": "datos_invitado"
+                }
+            },
+            {"$unwind": "$datos_invitado"},
+            {
+                "$match": {
+                    "datos_invitado.correo": correo
+                }
+            }
+        ]
+
+        resultado = list(db[col_eventos].aggregate(pipeline))
+
+        if not resultado:
+            print("El invitado no está registrado para este evento.")
+            return
+
+        invitado = resultado[0]
+
+        estado_global = invitado["datos_invitado"]["estado"]
+        estado_evento = invitado["invitados"]["estado"]
+
+        print(f"\nInvitado: {invitado['datos_invitado']['nombre']}")
+        print(f"Estado cuenta: {estado_global}")
+        print(f"Estado invitación: {estado_evento}")
+
+        if estado_global != "activo":
+            print("ACCESO DENEGADO: invitado bloqueado.")
+        elif estado_evento != "confirmado":
+            print("ACCESO DENEGADO: invitación no confirmada.")
+        else:
+            print("ACCESO PERMITIDO")
+
+    except PyMongoError as e:
+        print(f"[ERROR] {e}")
+
 
 def waitput():
     input('\nPresione cualquier tecla para continuar...')
