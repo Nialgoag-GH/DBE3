@@ -182,7 +182,7 @@ def menu():
             elif opcion == "2":
                 buscar_invitados_regex(db, col_invitados)
             elif opcion == "3":
-                validar_acceso_evento(db, col_eventos, col_invitados)
+                validar_acceso_evento_2(db, col_eventos, col_invitados)
             elif opcion == "4":
                 top_eventos_confirmados(db, col_eventos)
             elif opcion == "5":
@@ -248,6 +248,125 @@ def validar_acceso_evento(db, col_eventos, col_invitados):
     except PyMongoError as e:
         print(f"[ERROR] {e}")
 
+def validar_acceso_evento_2(db, col_eventos, col_invitados):
+
+    print("\n=== CONSULTAS DE EVENTOS E INVITADOS ===")
+    print("1. Mostrar eventos confirmados de un correo")
+    print("2. Mostrar invitados confirmados de un evento")
+
+    opcion = input("Seleccione una opción: ").strip()
+
+    try:
+
+        # ==========================================
+        # EVENTOS CONFIRMADOS DE UN CORREO
+        # ==========================================
+
+        if opcion == "1":
+
+            correo = input("Ingrese el correo: ").strip()
+
+            pipeline = [
+                {"$unwind": "$invitados"},
+                {
+                    "$lookup": {
+                        "from": col_invitados,
+                        "localField": "invitados.rut",
+                        "foreignField": "rut",
+                        "as": "datos_invitado"
+                    }
+                },
+                {"$unwind": "$datos_invitado"},
+                {
+                    "$match": {
+                        "datos_invitado.correo": correo,
+                        "invitados.estado": "confirmado"
+                    }
+                },
+                {
+                    "$project": {
+                        "_id": 0,
+                        "codigo": 1,
+                        "nombre": 1,
+                        "fecha": 1,
+                        "lugar": 1,
+                        "categoria": 1
+                    }
+                }
+            ]
+
+            resultados = list(db[col_eventos].aggregate(pipeline))
+
+            if not resultados:
+                print("No existen eventos confirmados para ese correo.")
+                return
+
+            print(f"\nEventos confirmados para {correo}:")
+
+            for evento in resultados:
+                print("-" * 40)
+                print(f"Código:    {evento['codigo']}")
+                print(f"Nombre:    {evento['nombre']}")
+                print(f"Fecha:     {evento['fecha']}")
+                print(f"Lugar:     {evento['lugar']}")
+                print(f"Categoría: {evento['categoria']}")
+
+        # ==========================================
+        # INVITADOS CONFIRMADOS DE UN EVENTO
+        # ==========================================
+
+        elif opcion == "2":
+
+            codigo_evento = input("Ingrese el código del evento: ").strip()
+
+            pipeline = [
+                {"$match": {"codigo": codigo_evento}},
+                {"$unwind": "$invitados"},
+                {
+                    "$match": {
+                        "invitados.estado": "confirmado"
+                    }
+                },
+                {
+                    "$lookup": {
+                        "from": col_invitados,
+                        "localField": "invitados.rut",
+                        "foreignField": "rut",
+                        "as": "datos_invitado"
+                    }
+                },
+                {"$unwind": "$datos_invitado"},
+                {
+                    "$project": {
+                        "_id": 0,
+                        "rut": "$datos_invitado.rut",
+                        "nombre": "$datos_invitado.nombre",
+                        "correo": "$datos_invitado.correo",
+                        "empresa": "$datos_invitado.empresa"
+                    }
+                }
+            ]
+
+            resultados = list(db[col_eventos].aggregate(pipeline))
+
+            if not resultados:
+                print("No se encontraron invitados confirmados.")
+                return
+
+            print(f"\nInvitados confirmados para {codigo_evento}:")
+
+            for invitado in resultados:
+                print("-" * 40)
+                print(f"Nombre:  {invitado['nombre']}")
+                print(f"RUT:     {invitado['rut']}")
+                print(f"Correo:  {invitado['correo']}")
+                print(f"Empresa: {invitado['empresa']}")
+
+        else:
+            print("Opción inválida.")
+
+    except PyMongoError as e:
+        print(f"[ERROR] {e}")
 
 def waitput():
     input('\nPresione cualquier tecla para continuar...')
