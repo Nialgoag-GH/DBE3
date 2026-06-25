@@ -48,7 +48,7 @@ def conectar_base_datos():
 # ==========================================
 
 def listar_eventos(db, col_eventos):
-    print(f"\n=== LISTADO DE EVENTOS ===")
+    print("\n=== LISTADO DE EVENTOS ===")
     try:
         eventos = db[col_eventos].find({}, {"_id": 0, "codigo": 1, "nombre": 1, "fecha": 1, "lugar": 1, "categoria": 1})
         cuenta = 0
@@ -62,14 +62,14 @@ def listar_eventos(db, col_eventos):
             print("-" * 30)
             
         if cuenta == 0:
-            print(f"No se encontraron registros.")
+            print("No se encontraron registros.")
             input('Presione Enter para continuar...')
     except PyMongoError as e:
         input('Presione Enter para continuar...')
         print(f"[ERROR] {e}")
 
 def buscar_invitados_regex(db, col_invitados):
-    print(f"\n=== BUSCAR INVITADOS (REGEX) ===")
+    print("\n=== BUSCAR INVITADOS (REGEX) ===")
     termino = input("Ingrese nombre o correo a buscar: ").strip()
     if not termino:
         return
